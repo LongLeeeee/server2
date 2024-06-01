@@ -519,6 +519,33 @@ namespace ServerProject
                             }
                         }
                     }
+                    else if (rqFromClient == "Icon")
+                    {
+                        string receive = reader.ReadLine();
+                        string senderName = receive.Substring(0, receive.IndexOf("|"));
+                        string receiverName = receive.Substring(receive.IndexOf("|") + 1);
+                        string IconLocation = reader.ReadLine();
+                        
+                        
+                        Invoke(new Action(() =>
+                        {
+                            richTextBox1.AppendText(senderName + " vừa gửi 1 icon đến " + receiverName + ".\r\n");
+
+                        }));
+
+                        foreach (var item in tcpClients)
+                        {
+                            if (item.Key.CompareTo(receiverName) == 0)
+                            {
+                                StreamWriter writer1 = new StreamWriter(tcpClients[receiverName].GetStream());
+                                writer1.AutoFlush = true;
+                                writer1.WriteLine("Icon");
+                                writer1.WriteLine(senderName);
+                                writer1.WriteLine(IconLocation);
+                                break;
+                            }
+                        }
+                    }
                     else if (rqFromClient == "File")
                     {
 
