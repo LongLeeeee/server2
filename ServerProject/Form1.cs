@@ -525,8 +525,8 @@ namespace ServerProject
                         string senderName = receive.Substring(0, receive.IndexOf("|"));
                         string receiverName = receive.Substring(receive.IndexOf("|") + 1);
                         string IconLocation = reader.ReadLine();
-                        
-                        
+
+
                         Invoke(new Action(() =>
                         {
                             richTextBox1.AppendText(senderName + " vừa gửi 1 icon đến " + receiverName + ".\r\n");
@@ -546,6 +546,7 @@ namespace ServerProject
                             }
                         }
                     }
+
                     else if (rqFromClient == "File")
                     {
 
@@ -740,6 +741,161 @@ namespace ServerProject
                         }
 
                     }
+                    else if (rqFromClient == "INCOMINGCALL")
+                    {
+                        string receive = reader.ReadLine();
+                        string senderName = receive.Substring(0, receive.IndexOf("|"));
+                        string receiverName = receive.Substring(receive.IndexOf("|") + 1);
+                        Invoke(new Action(() =>
+                        {
+                            richTextBox1.AppendText(senderName + " vừa gọi đến " + receiverName + ".\r\n");
+
+                        }));
+
+                        foreach (var item in tcpClients)
+                        {
+                            if (item.Key.CompareTo(receiverName) == 0)
+                            {
+                                StreamWriter writer1 = new StreamWriter(tcpClients[receiverName].GetStream());
+                                writer1.AutoFlush = true;
+                                writer1.WriteLine("INCOMINGCALL");
+                                writer1.WriteLine(senderName);
+
+                                break;
+                            }
+                        }
+                    }
+                    else if (rqFromClient == "NguoiGoiCup")
+                    {
+                        string receive = reader.ReadLine();
+                        string senderName = receive.Substring(0, receive.IndexOf("|"));
+                        string receiverName = receive.Substring(receive.IndexOf("|") + 1);
+                        Invoke(new Action(() =>
+                        {
+                            richTextBox1.AppendText(senderName + " vừa cúp máy " + receiverName + ".\r\n");
+
+                        }));
+                        foreach (var item in tcpClients)
+                        {
+                            if (item.Key.CompareTo(receiverName) == 0)
+                            {
+                                StreamWriter writer1 = new StreamWriter(tcpClients[receiverName].GetStream());
+                                writer1.AutoFlush = true;
+                                writer1.WriteLine("NguoiGoiCup");
+                                writer1.WriteLine(senderName);
+
+                                break;
+                            }
+                        }
+                    }
+                    else if (rqFromClient == "NguoiNhanCup")
+                    {
+                        string receive = reader.ReadLine();
+                        string senderName = receive.Substring(0, receive.IndexOf("|"));
+                        string receiverName = receive.Substring(receive.IndexOf("|") + 1);
+                        Invoke(new Action(() =>
+                        {
+                            richTextBox1.AppendText(senderName + " vừa cúp máy " + receiverName + ".\r\n");
+
+                        }));
+                        foreach (var item in tcpClients)
+                        {
+                            if (item.Key.CompareTo(receiverName) == 0)
+                            {
+                                StreamWriter writer1 = new StreamWriter(tcpClients[receiverName].GetStream());
+                                writer1.AutoFlush = true;
+                                writer1.WriteLine("NguoiNhanCup");
+                                writer1.WriteLine(senderName);
+
+                                break;
+                            }
+                        }
+                    }
+                    else if (rqFromClient == "NguoiNhanChapNhan")
+                    {
+                        string receive = reader.ReadLine();
+                        string senderName = receive.Substring(0, receive.IndexOf("|"));
+                        string receiverName = receive.Substring(receive.IndexOf("|") + 1);
+                        Invoke(new Action(() =>
+                        {
+                            richTextBox1.AppendText(senderName + " vừa cúp máy " + receiverName + ".\r\n");
+
+                        }));
+                        foreach (var item in tcpClients)
+                        {
+                            if (item.Key.CompareTo(senderName) == 0)
+                            {
+                                StreamWriter writer1 = new StreamWriter(tcpClients[senderName].GetStream());
+                                writer1.AutoFlush = true;
+                                writer1.WriteLine("NguoiNhanChapNhan");
+                                writer1.WriteLine(receiverName);
+
+                                break;
+                            }
+                        }
+                        foreach (var item in tcpClients)
+                        {
+                            if (item.Key.CompareTo(receiverName) == 0)
+                            {
+                                StreamWriter writer1 = new StreamWriter(tcpClients[receiverName].GetStream());
+                                writer1.AutoFlush = true;
+                                writer1.WriteLine("NguoiNhanChapNhanNG");
+                                writer1.WriteLine(senderName);
+
+                                break;
+                            }
+                        }
+
+                    }
+                    else if (rqFromClient == "CALLING")
+                    {
+                        string receive = reader.ReadLine();
+                        string senderName = receive.Substring(0, receive.IndexOf("|"));
+                        string receiverName = receive.Substring(receive.IndexOf("|") + 1);
+
+
+                        foreach (var item in tcpClients)
+                        {
+                            if (item.Key.CompareTo(receiverName) == 0)
+                            {
+
+                                StreamWriter writer1 = new StreamWriter(tcpClients[receiverName].GetStream());
+                                writer1.AutoFlush = true;
+                                writer1.WriteLine("CALLING");
+                                break;
+                            }
+                        }
+                        
+                      
+
+                            NetworkStream clientStream = client.GetStream();
+                            byte[] buffer = new byte[16384];
+                            int bytesRead;
+                            while ((bytesRead = clientStream.Read(buffer, 0, buffer.Length)) != 0)
+                            {
+
+                                foreach (var item in tcpClients)
+                                {
+                                    if (item.Key.CompareTo(receiverName) == 0)
+                                    {
+
+                                        NetworkStream stream = tcpClients[receiverName].GetStream();
+
+                                        stream.Write(buffer, 0, bytesRead);
+                                        break;
+                                    }
+                                }
+                            }
+                        
+                       
+
+                        
+
+
+
+
+                    }
+
                     else if (rqFromClient == "quit")
                     {
                         Invoke(new Action(() =>
