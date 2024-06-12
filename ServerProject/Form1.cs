@@ -823,6 +823,7 @@ namespace ServerProject
                         }
                         else
                         {
+                            groupNameList.Add(groupName);
                             writer.WriteLine("CreatedSuccessfully");
                             writer.WriteLine(sender);
                             writer.WriteLine(receivers);
