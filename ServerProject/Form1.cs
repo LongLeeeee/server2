@@ -33,8 +33,8 @@ namespace ServerProject
 
         FirebaseConfig config = new FirebaseConfig()
         {
-            AuthSecret = "x8Z5vS17muGioNQZJgeGHU9V9nggI1dOcKDlzHmv",
-            BasePath = "https://chat-application-of-team-12-default-rtdb.firebaseio.com/"
+            AuthSecret = "JSe2prlcdWFSAjZFjeR3SSh4BFUnkbAbZ979GVx3",
+            BasePath = "https://testfirebase-c58f8-default-rtdb.firebaseio.com/"
         };
         IFirebaseClient FirebaseClient;
         List<string> userList;
@@ -308,9 +308,10 @@ namespace ServerProject
                         string usrname = infors[1];
                         string newname = infors[2];
                         var users = FirebaseClient.Set($"users/{usrname}/name", newname);
-                        if (users != null && users.StatusCode == HttpStatusCode.OK)
+                        if (users.StatusCode == HttpStatusCode.OK)
                         {
                             writer.WriteLine("changename_success");
+                            writer.WriteLine(newname);
                         }
                         else writer.WriteLine("changename_failed");
                     }
