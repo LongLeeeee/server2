@@ -823,11 +823,29 @@ namespace ServerProject
                         var response = FirebaseClient.Get("groupnamelist/list/");
                         if (response != null && response.StatusCode == HttpStatusCode.OK)
                         {
+<<<<<<< HEAD
 
 
                             var temp1 = JsonConvert.DeserializeObject<Dictionary<string, string>>(response.Body);
                             groupNameList = new List<string>();
                             if (temp1 != null)
+=======
+                            groupNameList.Add(item.Value);
+                        }
+                        if (groupNameList.Contains(groupName))
+                        {
+                            writer.WriteLine("CreatedFailure");
+                            break;
+                        }
+                        else
+                        {
+                            groupNameList.Add(groupName);
+                            writer.WriteLine("CreatedSuccessfully");
+                            writer.WriteLine(sender);
+                            writer.WriteLine(receivers);
+                            writer.WriteLine(groupName);
+                            foreach (var item in receiverList)
+>>>>>>> 23d413193fac29fde443d8a9e60bef963d3552ba
                             {
                                 foreach (var item in temp1)
                                 {
