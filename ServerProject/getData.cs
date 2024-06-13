@@ -82,11 +82,13 @@ namespace ServerProject
     }
     class CheckDataBase : LoadInformation
     {
+
         FirebaseConfig config = new FirebaseConfig()
         {
-            AuthSecret = "JSe2prlcdWFSAjZFjeR3SSh4BFUnkbAbZ979GVx3",
-            BasePath = "https://testfirebase-c58f8-default-rtdb.firebaseio.com/"
+            AuthSecret = "x8Z5vS17muGioNQZJgeGHU9V9nggI1dOcKDlzHmv",
+            BasePath = "https://chat-application-of-team-12-default-rtdb.firebaseio.com/"
         };
+        
         IFirebaseClient client;
         public void CompareData(ref Dictionary<string, string> check, List<string> userList, Data loginUser, ref bool success, string code, ref string usernameOnline)
         {

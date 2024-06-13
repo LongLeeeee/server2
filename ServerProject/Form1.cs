@@ -30,11 +30,18 @@ namespace ServerProject
         private TcpListener tcpListener;
         private TcpClient tcpClient;
         private bool isServerRunninng = false;
-        bool check = true;
+        bool check = true;/*
         FirebaseConfig config = new FirebaseConfig()
         {
             AuthSecret = "JSe2prlcdWFSAjZFjeR3SSh4BFUnkbAbZ979GVx3",
             BasePath = "https://testfirebase-c58f8-default-rtdb.firebaseio.com/"
+        };
+        */
+        
+        FirebaseConfig config = new FirebaseConfig()
+        {
+            AuthSecret = "x8Z5vS17muGioNQZJgeGHU9V9nggI1dOcKDlzHmv",
+            BasePath = "https://chat-application-of-team-12-default-rtdb.firebaseio.com/"
         };
         IFirebaseClient FirebaseClient;
         List<string> userList;
@@ -759,9 +766,9 @@ namespace ServerProject
                         if (tcpClients.ContainsKey(receiver))
                         {
                             StreamWriter wr = new StreamWriter(tcpClients[receiver].GetStream());
-                            wr.AutoFlush = true;
+                           // wr.AutoFlush = true;
                             StreamWriter wr1 = new StreamWriter(client.GetStream());
-                            wr1.AutoFlush = true;
+                            //wr1.AutoFlush = true;
 
                             wr.WriteLine("AcceptedSuccessfullyForReceiver");
                             wr.WriteLine(sender);
@@ -769,6 +776,8 @@ namespace ServerProject
                             {
                                 username = sender
                             };
+                            wr.Flush();
+
 
                             wr1.WriteLine("AcceptedSuccessfullyForSender");
                             wr1.WriteLine(receiver);
@@ -776,6 +785,7 @@ namespace ServerProject
                             {
                                 username = receiver
                             };
+                            wr1.Flush();
                             PushResponse pushFriendToFireBase = FirebaseClient.Push<Friend>($"friendList/{receiver}/friends/", friend1);
                             PushResponse pushFriendToFireBase1 = FirebaseClient.Push<Friend>($"friendList/{sender}/friends/", friend2);
                         }
@@ -809,55 +819,64 @@ namespace ServerProject
                             richTextBox1.AppendText(sender + " vừa gửi yêu cầu tạo nhóm với tên " + groupName + ".\r\n");
 
                         }));
+
                         var response = FirebaseClient.Get("groupnamelist/list/");
-                        var temp1 = JsonConvert.DeserializeObject<Dictionary<string, string>>(response.Body);
-                        groupNameList = new List<string>();
-                        foreach (var item in temp1)
+                        if (response != null && response.StatusCode == HttpStatusCode.OK)
                         {
-                            groupNameList.Add(item.Value);
-                        }
-                        if (groupNameList.Contains(groupName))
-                        {
-                            writer.WriteLine("CreatedFailure");
-                            break;
-                        }
-                        else
-                        {
-                            writer.WriteLine("CreatedSuccessfully");
-                            writer.WriteLine(sender);
-                            writer.WriteLine(receivers);
-                            writer.WriteLine(groupName);
-                            foreach (var item in receiverList)
+
+
+                            var temp1 = JsonConvert.DeserializeObject<Dictionary<string, string>>(response.Body);
+                            groupNameList = new List<string>();
+                            if (temp1 != null)
                             {
-                                foreach (var item2 in tcpClients)
+                                foreach (var item in temp1)
                                 {
-                                    if (item == item2.Key && item != sender)
+                                    groupNameList.Add(item.Value);
+                                }
+                            }
+                            if (groupNameList.Contains(groupName))
+                            {
+                                writer.WriteLine("CreatedFailure");
+                                break;
+                            }
+
+                            else
+                            {
+                                writer.WriteLine("CreatedSuccessfully");
+                                writer.WriteLine(sender);
+                                writer.WriteLine(receivers);
+                                writer.WriteLine(groupName);
+                                foreach (var item in receiverList)
+                                {
+                                    foreach (var item2 in tcpClients)
                                     {
-                                        StreamWriter wr = new StreamWriter(tcpClients[item].GetStream());
-                                        wr.AutoFlush = true;
-                                        wr.WriteLine("CreatedSuccessfully");
-                                        wr.WriteLine(sender);
-                                        wr.WriteLine(receivers);
-                                        wr.WriteLine(groupName);
+                                        if (item == item2.Key && item != sender)
+                                        {
+                                            StreamWriter wr = new StreamWriter(tcpClients[item].GetStream());
+                                            wr.AutoFlush = true;
+                                            wr.WriteLine("CreatedSuccessfully");
+                                            wr.WriteLine(sender);
+                                            wr.WriteLine(receivers);
+                                            wr.WriteLine(groupName);
+                                        }
                                     }
                                 }
-                            }
-                            groupchat temp = new groupchat()
-                            {
-                                groupName = groupName,
-                                receiver = receiverList,
-                                roomkey = getRoomKey(groupName),
-                            };
-                            foreach (var item in temp.receiver)
-                            {
-                                if (!string.IsNullOrEmpty(item))
+                                groupchat temp = new groupchat()
                                 {
-                                    SetResponse groupchat = FirebaseClient.Set<groupchat>($"groupchat/{item}/listgroupchat/{groupName}", temp);
+                                    groupName = groupName,
+                                    receiver = receiverList,
+                                    roomkey = getRoomKey(groupName),
+                                };
+                                foreach (var item in temp.receiver)
+                                {
+                                    if (!string.IsNullOrEmpty(item))
+                                    {
+                                        SetResponse groupchat = FirebaseClient.Set<groupchat>($"groupchat/{item}/listgroupchat/{groupName}", temp);
+                                    }
                                 }
+                                PushResponse groupname = FirebaseClient.Push<string>($"groupnamelist/list/", groupName);
                             }
-                            PushResponse groupname = FirebaseClient.Push<string>($"groupnamelist/list/", groupName);
                         }
-
                     }
                     else if (rqFromClient == "INCOMINGCALL")
                     {
