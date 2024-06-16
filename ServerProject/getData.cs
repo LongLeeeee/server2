@@ -22,15 +22,9 @@ namespace ServerProject
         public string email { get; set; }
         public string password { get; set; }
         public string userName { get; set; }
-        public Notification notification { get; set; }
-    }
-    public class YourDataModel
-    {
-        public string userName { get; set; }
+        public string name { get; set; }
         public List<string> friends { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public Dictionary<string, Notification> notifications { get; set; } // Thuộc tính có kiểu List<Notification>
+        public Notification notification { get; set; }
     }
     public class Notification
     {
@@ -92,6 +86,8 @@ namespace ServerProject
         {
             AuthSecret = "JSe2prlcdWFSAjZFjeR3SSh4BFUnkbAbZ979GVx3",
             BasePath = "https://testfirebase-c58f8-default-rtdb.firebaseio.com/"
+            //AuthSecret = "x8Z5vS17muGioNQZJgeGHU9V9nggI1dOcKDlzHmv",
+            //BasePath = "https://chat-application-of-team-12-default-rtdb.firebaseio.com/"
         };
         IFirebaseClient client;
         public void CompareData(ref Dictionary<string, string> check, List<string> userList, Data loginUser, ref bool success, string code, ref string usernameOnline)
@@ -127,6 +123,7 @@ namespace ServerProject
                     userName = loginUser.userName,
                     password = loginUser.password,
                     email = loginUser.email,
+                    name = loginUser.userName,
                 };
                 client = new FireSharp.FirebaseClient(config);
                 SetResponse rs;

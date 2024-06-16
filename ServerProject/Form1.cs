@@ -30,17 +30,21 @@ namespace ServerProject
         private TcpListener tcpListener;
         private TcpClient tcpClient;
         private bool isServerRunninng = false;
-
+        bool check = true;
         FirebaseConfig config = new FirebaseConfig()
         {
             AuthSecret = "JSe2prlcdWFSAjZFjeR3SSh4BFUnkbAbZ979GVx3",
             BasePath = "https://testfirebase-c58f8-default-rtdb.firebaseio.com/"
+            //AuthSecret = "x8Z5vS17muGioNQZJgeGHU9V9nggI1dOcKDlzHmv",
+            //BasePath = "https://chat-application-of-team-12-default-rtdb.firebaseio.com/"
         };
         IFirebaseClient FirebaseClient;
         List<string> userList;
         Dictionary<string, TcpClient> tcpClients;
+        Dictionary<string, TcpClient> CalltcpClients;
         Dictionary<string, string> dataUser;
         List<string> groupNameList;
+        
         Image ptb = null;
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -279,6 +283,117 @@ namespace ServerProject
                             }
                         }
                     }
+                    else if (rqFromClient.StartsWith("Name|"))
+                    {
+                        string usrname = rqFromClient.Substring(rqFromClient.IndexOf('|') + 1);
+                        var res = FirebaseClient.Get($"users/");
+                        if (res != null && res.StatusCode == System.Net.HttpStatusCode.OK && !string.IsNullOrEmpty(res.Body))
+                        {
+                            try
+                            {
+                                var users = JsonConvert.DeserializeObject<Dictionary<string, Data>>(res.Body);
+                                foreach (var user in users)
+                                {
+                                    if (user.Value.userName == usrname)
+                                    {
+                                        writer.WriteLine(user.Value.name);
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show(ex.ToString());
+                            }
+                        }
+                    }
+                    else if (rqFromClient.StartsWith("changename|"))
+                    {
+                        string[] infors = rqFromClient.Split('|');
+                        string usrname = infors[1];
+                        string newname = infors[2];
+                        var users = FirebaseClient.Set($"users/{usrname}/name", newname);
+                        if (users.StatusCode == HttpStatusCode.OK)
+                        {
+                            writer.WriteLine("changename_success");
+                            writer.WriteLine(newname);
+                        }
+                        else writer.WriteLine("changename_failed");
+                    }
+                    else if (rqFromClient.StartsWith("checkpass|"))
+                    {
+                        string[] infor = rqFromClient.Split('|');
+                        string usrname = infor[1];
+                        string email = infor[2];
+                        string oldpass = infor[3];
+
+
+                        lock (dataUser) // Bảo vệ việc truy cập vào dataUser
+                        {
+                            string response = "unmatched"; // Default response
+                            if (dataUser.ContainsKey(email))
+                            {
+                                if (dataUser[email] == oldpass)
+                                {
+                                    response = "matched";
+                                }
+                            }
+
+                            writer.WriteLine(response);
+                            writer.Flush();
+                            this.Invoke(new Action(() =>
+                            {
+                                richTextBox1.AppendText($"{usrname} kiểm tra mật khẩu {response}\n");
+                            }));
+                        }
+                    }
+                    else if (rqFromClient.StartsWith("changepass|"))
+                    {
+                        string user = rqFromClient.Substring(rqFromClient.IndexOf('|') + 1);
+                        string[] infor = user.Split(',');
+                        string usrname = infor[0];
+                        string email = infor[1];
+                        string newpass = infor[2];
+                        try
+                        {
+                            FirebaseClient = new FirebaseClient(config);
+
+
+                            var res = FirebaseClient.Set($"users/{usrname}/password", newpass);
+
+                            StreamWriter wt = new StreamWriter(tcpClients[usrname].GetStream());
+                            wt.AutoFlush = true;
+
+                            if (res.StatusCode == HttpStatusCode.OK)
+                            {
+                                wt.WriteLine("success");
+                                wt.Flush(); // Flush stream writer để đảm bảo dữ liệu được gửi đi
+                                lock (dataUser)
+                                {
+                                    dataUser[email] = newpass;
+                                }
+                                this.Invoke(new Action(() =>
+                                {
+                                    richTextBox1.AppendText($"{usrname} đã đổi mật khẩu thành công\n");
+                                }));
+                            }
+                            else
+                            {
+                                wt.WriteLine("error");
+                                wt.Flush(); // Flush stream writer để đảm bảo dữ liệu được gửi đi
+                                this.Invoke(new Action(() =>
+                                {
+                                    richTextBox1.AppendText($"Đổi mật khẩu cho {usrname} thất bại: Firebase cập nhật thất bại\n");
+                                }));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            this.Invoke(new Action(() =>
+                            {
+                                richTextBox1.AppendText($"Error processing change password request from {usrname}: {ex.Message}\n");
+                            }));
+                        }
+                    }
                     else if (rqFromClient == "ListUser")
                     {
                         // Lấy dữ liệu từ Firebase
@@ -292,7 +407,7 @@ namespace ServerProject
                                 // Đọc dữ liệu từ phản hồi
                                 var jsonData = response.Body;
                                 // Deserialize dữ liệu thành một đối tượng Dictionary<string, YourDataModel>
-                                var users = JsonConvert.DeserializeObject<Dictionary<string, YourDataModel>>(jsonData);
+                                var users = JsonConvert.DeserializeObject<Dictionary<string, Data>>(jsonData);
                                 foreach (var user in users)
                                 {
                                     ListUserstring += user.Value.userName + "|";
@@ -642,8 +757,6 @@ namespace ServerProject
                         {
                             StreamWriter wr = new StreamWriter(tcpClients[receiver].GetStream());
                             wr.AutoFlush = true;
-                            StreamWriter wr1 = new StreamWriter(client.GetStream());
-                            wr1.AutoFlush = true;
 
                             wr.WriteLine("AcceptedSuccessfullyForReceiver");
                             wr.WriteLine(sender);
@@ -652,8 +765,8 @@ namespace ServerProject
                                 username = sender
                             };
 
-                            wr1.WriteLine("AcceptedSuccessfullyForSender");
-                            wr1.WriteLine(receiver);
+                            writer.WriteLine("AcceptedSuccessfullyForSender");
+                            writer.WriteLine(receiver);
                             Friend friend2 = new Friend()
                             {
                                 username = receiver
@@ -705,6 +818,7 @@ namespace ServerProject
                         }
                         else
                         {
+                            groupNameList.Add(groupName);
                             writer.WriteLine("CreatedSuccessfully");
                             writer.WriteLine(sender);
                             writer.WriteLine(receivers);
@@ -818,7 +932,7 @@ namespace ServerProject
                         string receiverName = receive.Substring(receive.IndexOf("|") + 1);
                         Invoke(new Action(() =>
                         {
-                            richTextBox1.AppendText(senderName + " vừa cúp máy " + receiverName + ".\r\n");
+                            richTextBox1.AppendText(senderName + " vừa bắt máy " + receiverName + ".\r\n");
 
                         }));
                         foreach (var item in tcpClients)
@@ -853,47 +967,81 @@ namespace ServerProject
                         string senderName = receive.Substring(0, receive.IndexOf("|"));
                         string receiverName = receive.Substring(receive.IndexOf("|") + 1);
 
+                        CalltcpClients = new Dictionary<string, TcpClient>();
+                        CalltcpClients.Add(senderName, tcpClients[senderName]);
+                        CalltcpClients.Add(receiverName, tcpClients[receiverName]);
 
-                        foreach (var item in tcpClients)
+                        foreach (var item in CalltcpClients)
                         {
-                            if (item.Key.CompareTo(receiverName) == 0)
-                            {
+                            StreamWriter writer1 = new StreamWriter(CalltcpClients[item.Key].GetStream());
 
-                                StreamWriter writer1 = new StreamWriter(tcpClients[receiverName].GetStream());
-                                writer1.AutoFlush = true;
-                                writer1.WriteLine("CALLING");
-                                break;
-                            }
+                            writer1.WriteLine("CALLING");
+                            writer1.Flush();
+                            break;
+
                         }
-                        
-                      
+                        NetworkStream clientStream = client.GetStream();
+                        byte[] buffer = new byte[16384];
+                        int bytesRead;
+                        while ((bytesRead = clientStream.Read(buffer, 0, buffer.Length)) != 0)
+                        {
+                            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                            if (message == "END_CALL")
+                            {
+                                foreach (var item in CalltcpClients)
+                                {
 
-                            NetworkStream clientStream = client.GetStream();
-                            byte[] buffer = new byte[16384];
-                            int bytesRead;
-                            while ((bytesRead = clientStream.Read(buffer, 0, buffer.Length)) != 0)
+
+                                    NetworkStream stream = CalltcpClients[item.Key].GetStream();
+                                    string endCallMessage = "END_CALL";
+                                    byte[] endCallBytes = Encoding.UTF8.GetBytes(endCallMessage);
+                                    stream.Write(endCallBytes, 0, endCallBytes.Length);
+                                    stream.Flush();
+
+                                    break;
+
+
+                                }
+
+
+
+
+                            }
+                            else if (message == "END_CALL_2")
                             {
 
-                                foreach (var item in tcpClients)
+                                break;
+
+                            }
+                            else
+                            {
+                                foreach (var item in CalltcpClients)
                                 {
-                                    if (item.Key.CompareTo(receiverName) == 0)
+                                    if (CalltcpClients[item.Key] != CalltcpClients[username])
                                     {
 
-                                        NetworkStream stream = tcpClients[receiverName].GetStream();
+                                        NetworkStream stream = CalltcpClients[item.Key].GetStream();
 
                                         stream.Write(buffer, 0, bytesRead);
                                         break;
                                     }
                                 }
                             }
-                        
-                       
-
-                        
 
 
+                        }
 
 
+                    }
+                    else if (rqFromClient == "OUTCALL")
+                    {
+                        string receive = reader.ReadLine();
+                        string senderName = receive.Substring(0, receive.IndexOf("|"));
+                        string receiverName = receive.Substring(receive.IndexOf("|") + 1);
+                        Invoke(new Action(() =>
+                        {
+                            richTextBox1.AppendText(senderName + " vừa outcall.\r\n");
+                        }));
                     }
 
                     else if (rqFromClient == "quit")
